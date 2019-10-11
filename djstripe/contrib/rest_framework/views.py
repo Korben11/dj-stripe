@@ -54,7 +54,7 @@ class SubscriptionRestView(APIView):
                     charge_immediately = True
 
                 customer.subscribe(serializer.data["plan"], charge_immediately,
-                                   metadata=serializer.data["metadata"])
+                                   metadata=serializer.data.get("metadata", None))
                 return Response(serializer.data, status=status.HTTP_201_CREATED)
             except Exception:
                 # TODO: Better error messages

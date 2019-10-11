@@ -10,3 +10,10 @@ docs/_static
 
 # SQLite
 *.sqlite3
+
+# IDE PyCharm
+.idea
+
+dj_stripe\.egg-info/
+
+cover/

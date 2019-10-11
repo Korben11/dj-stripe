@@ -32,7 +32,7 @@ class SubscriptionRestView(APIView):
             subscriber=subscriber_request_callback(self.request)
         )
 
-        serializer = SubscriptionSerializer(customer.subscription)
+        serializer = SubscriptionSerializer(customer.subscriptions.all(), many=True)
         return Response(serializer.data)
 
     def post(self, request, **kwargs):

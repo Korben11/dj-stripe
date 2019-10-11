@@ -53,7 +53,8 @@ class SubscriptionRestView(APIView):
                 if charge_immediately is None:
                     charge_immediately = True
 
-                customer.subscribe(serializer.data["plan"], charge_immediately)
+                customer.subscribe(serializer.data["plan"], charge_immediately,
+                                   metadata=serializer.data["metadata"])
                 return Response(serializer.data, status=status.HTTP_201_CREATED)
             except Exception:
                 # TODO: Better error messages

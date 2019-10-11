@@ -11,7 +11,6 @@ from rest_framework import serializers
 from rest_framework.serializers import ModelSerializer
 
 from djstripe.models import Subscription
-from djstripe.fields import JSONField
 
 
 class SubscriptionSerializer(ModelSerializer):
@@ -33,4 +32,4 @@ class CreateSubscriptionSerializer(serializers.Serializer):
     tax_percent = serializers.DecimalField(
         required=False, max_digits=5, decimal_places=2
     )
-    metadata = JSONField(required=False)
+    metadata = serializers.JSONField(required=False)

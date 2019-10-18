@@ -7,12 +7,14 @@
 
 """
 
+from django.http import Http404
+
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from ...models import Customer
+from ...models import Customer, Subscription
 from ...settings import CANCELLATION_AT_PERIOD_END, subscriber_request_callback
 from .serializers import CreateSubscriptionSerializer, SubscriptionSerializer
 
@@ -65,19 +67,35 @@ class SubscriptionRestView(APIView):
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    def delete(self, request, **kwargs):
-        """
-        Mark the customers current subscription as canceled.
 
-        Returns with status code 204.
-        """
+class SubscriptionDeleteRestView(APIView):
+    """API Endpoints for the Subscription object."""
+
+    permission_classes = (IsAuthenticated,)
+
+    def get_object(self, pk):
         try:
             customer, _created = Customer.get_or_create(
                 subscriber=subscriber_request_callback(self.request)
             )
-            customer.subscription.cancel(at_period_end=CANCELLATION_AT_PERIOD_END)
+            subscription = customer.subscriptions.get(id=pk)
+            return subscription
+        except Subscription.DoesNotExist:
+            raise Http404
 
-            return Response(status=status.HTTP_204_NO_CONTENT)
+    def delete(self, request, pk, **kwargs):
+        """
+        Mark the customers chosen subscription as canceled.
+
+        Returns with status code 204.
+        """
+        try:
+            subscription = self.get_object(pk)
+            subscription.cancel(at_period_end=CANCELLATION_AT_PERIOD_END)
+
+            serializer = SubscriptionSerializer(subscription)
+
+            return Response(serializer.data, status=status.HTTP_204_NO_CONTENT)
         except Exception:
             return Response(
                 "Something went wrong cancelling the subscription.",

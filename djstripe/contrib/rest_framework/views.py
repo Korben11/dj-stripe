@@ -18,6 +18,10 @@ from ...models import Customer, Subscription
 from ...settings import CANCELLATION_AT_PERIOD_END, subscriber_request_callback
 from .serializers import CreateSubscriptionSerializer, SubscriptionSerializer
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 
 class SubscriptionRestView(APIView):
     """API Endpoints for the Subscription object."""
@@ -58,8 +62,9 @@ class SubscriptionRestView(APIView):
                 customer.subscribe(serializer.data["plan"], charge_immediately,
                                    metadata=serializer.data.get("metadata", None))
                 return Response(serializer.data, status=status.HTTP_201_CREATED)
-            except Exception:
+            except Exception as ex:
                 # TODO: Better error messages
+                logger.debug(f'{type(ex)} {ex}')
                 return Response(
                     "Something went wrong processing the payment.",
                     status=status.HTTP_400_BAD_REQUEST,

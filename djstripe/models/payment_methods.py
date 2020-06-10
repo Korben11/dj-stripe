@@ -26,6 +26,7 @@ class DjstripePaymentMethod(models.Model):
     """
 
     id = models.CharField(max_length=255, primary_key=True)
+    reseller = models.CharField(max_length=255, null=True, blank=True)
     type = models.CharField(max_length=12, db_index=True)
 
     @classmethod

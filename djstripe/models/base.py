@@ -29,6 +29,7 @@ class StripeModel(models.Model):
     )
 
     id = StripeIdField(unique=True)
+    reseller = models.CharField(max_length=255, null=True, blank=True)
     livemode = models.NullBooleanField(
         default=None,
         null=True,

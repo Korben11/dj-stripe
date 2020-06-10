@@ -32,6 +32,7 @@ class WebhookEventTrigger(models.Model):
     """
 
     id = models.BigAutoField(primary_key=True)
+    reseller = models.CharField(max_length=255, null=True, blank=True)
     remote_ip = models.GenericIPAddressField(
         help_text="IP address of the request client."
     )

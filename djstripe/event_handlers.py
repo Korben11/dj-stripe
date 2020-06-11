@@ -325,6 +325,7 @@ def _handle_crud_like_event(
         if hasattr(target_cls, "customer"):
             kwargs["customer"] = customer
         data = target_cls(**kwargs).api_retrieve()
+        data['reseller'] = event.reseller
         obj = target_cls.sync_from_stripe_data(data)
 
     return obj, crud_type

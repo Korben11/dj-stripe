@@ -130,9 +130,6 @@ class Account(StripeModel):
 
         return cls._get_or_create_from_stripe_object(account_data)[0]
 
-    def __str__(self):
-        return self.display_name or self.business_name
-
     @classmethod  # noqa: C901
     def _manipulate_stripe_object_hook(cls, data):
         data = super()._manipulate_stripe_object_hook(data)

@@ -324,8 +324,21 @@ def _handle_crud_like_event(
         kwargs = {"id": id}
         if hasattr(target_cls, "customer"):
             kwargs["customer"] = customer
-        data = target_cls(**kwargs).api_retrieve()
-        data['reseller'] = event.reseller
-        obj = target_cls.sync_from_stripe_data(data)
+
+        try:
+            from django.apps import apps
+            Reseller = apps.get_model("reseller", "Reseller")
+            data['reseller'] = event.reseller
+            api_kwargs = {}
+            if event.reseller:
+                reseller = Reseller.objects.get(id=int(event.reseller))
+                api_kwargs["api_key"] = reseller.stripe_secret_key
+            data = target_cls(**kwargs)\
+                .api_retrieve(**api_kwargs)
+            obj = target_cls.sync_from_stripe_data(data)
+        except LookupError:
+            data = target_cls(**kwargs).api_retrieve()
+            data['reseller'] = event.reseller
+            obj = target_cls.sync_from_stripe_data(data)
 
     return obj, crud_type

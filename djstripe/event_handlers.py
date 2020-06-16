@@ -336,6 +336,9 @@ def _handle_crud_like_event(
             data = target_cls(**kwargs)\
                 .api_retrieve(**api_kwargs)
             obj = target_cls.sync_from_stripe_data(data)
+            if event.reseller:
+                obj.reseller = str(event.reseller)
+                obj.save()
         except LookupError:
             data = target_cls(**kwargs).api_retrieve()
             data['reseller'] = event.reseller

@@ -124,8 +124,13 @@ class Account(StripeModel):
 
     @classmethod
     def get_default_account(cls):
+        _api_key = djstripe_settings.STRIPE_SECRET_KEY
+        if cls.reseller:
+            from django.apps import apps
+            Reseller = apps.get_model("reseller", "Reseller")
+            _api_key = Reseller.objects.get(id=int(cls.reseller)).stripe_secret_key
         account_data = cls.stripe_class.retrieve(
-            api_key=djstripe_settings.STRIPE_SECRET_KEY
+            api_key=_api_key
         )
 
         return cls._get_or_create_from_stripe_object(account_data)[0]

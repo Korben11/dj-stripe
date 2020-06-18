@@ -79,6 +79,10 @@ class StripeModel(models.Model):
 
     @property
     def default_api_key(self):
+        if self.reseller:
+            from django.apps import apps
+            Reseller = apps.get_model("reseller", "Reseller")
+            return Reseller.objects.get(id=int(self.reseller)).stripe_secret_key
         return djstripe_settings.get_default_api_key(self.livemode)
 
     def api_retrieve(self, api_key=None, stripe_account=None):
@@ -507,7 +511,10 @@ class StripeModel(models.Model):
                 # Leaving the default field_name ("id") will get_or_create the customer.
                 # If field_name="default_source", we get_or_create the card instead.
                 cls_instance = cls(id=id_)
+                _reseller = data["reseller"]
+                cls_instance.reseller = _reseller
                 data = cls_instance.api_retrieve(stripe_account=stripe_account)
+                data["reseller"] = _reseller
                 should_expand = False
 
         # The next thing to happen will be the "create from stripe object" call.

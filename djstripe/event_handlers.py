@@ -189,6 +189,7 @@ def other_object_webhook_handler(event):
             "source": models.Source,
         }.get(event.category)
 
+    target_cls.reseller = event.reseller
     _handle_crud_like_event(target_cls=target_cls, event=event)
 
 
@@ -325,23 +326,10 @@ def _handle_crud_like_event(
         if hasattr(target_cls, "customer"):
             kwargs["customer"] = customer
 
-        try:
-            from django.apps import apps
-            Reseller = apps.get_model("reseller", "Reseller")
-            data['reseller'] = event.reseller
-            api_kwargs = {}
-            if event.reseller:
-                reseller = Reseller.objects.get(id=int(event.reseller))
-                api_kwargs["api_key"] = reseller.stripe_secret_key
-            data = target_cls(**kwargs)\
-                .api_retrieve(**api_kwargs)
-            obj = target_cls.sync_from_stripe_data(data)
-            if event.reseller:
-                obj.reseller = str(event.reseller)
-                obj.save()
-        except LookupError:
-            data = target_cls(**kwargs).api_retrieve()
-            data['reseller'] = event.reseller
-            obj = target_cls.sync_from_stripe_data(data)
+        kwargs["reseller"] = event.reseller
+        _target_cls = target_cls(**kwargs)
+        data = _target_cls.api_retrieve()
+        data['reseller'] = event.reseller
+        obj = target_cls.sync_from_stripe_data(data)
 
     return obj, crud_type

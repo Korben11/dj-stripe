@@ -154,7 +154,13 @@ class StripeModel(models.Model):
         :type api_key: string
         """
 
-        return cls.stripe_class.create(api_key=api_key, **kwargs)
+        _api_key = api_key
+        if cls.reseller:
+            from django.apps import apps
+            Reseller = apps.get_model("reseller", "Reseller")
+            _api_key = Reseller.objects.get(id=int(cls.reseller)).stripe_secret_key
+
+        return cls.stripe_class.create(api_key=_api_key, **kwargs)
 
     def _api_delete(self, api_key=None, stripe_account=None, **kwargs):
         """

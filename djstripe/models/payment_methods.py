@@ -111,10 +111,16 @@ class LegacySourceMixin:
         #     check if either a customer or account is supplied to determine
         #     the correct object to use.
 
+        _api_key = api_key
+        if cls.reseller:
+            from django.apps import apps
+            Reseller = apps.get_model("reseller", "Reseller")
+            _api_key = Reseller.objects.get(id=int(cls.reseller)).stripe_secret_key
+
         customer, clean_kwargs = cls._get_customer_from_kwargs(**kwargs)
 
         return (
-            customer.api_retrieve(api_key=api_key)
+            customer.api_retrieve(api_key=_api_key)
             .sources.list(object=cls.stripe_class.OBJECT_NAME, **clean_kwargs)
             .auto_paging_iter()
         )

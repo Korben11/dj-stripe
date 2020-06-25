@@ -142,7 +142,13 @@ class StripeModel(models.Model):
         :returns: an iterator over all items in the query
         """
 
-        return cls.stripe_class.list(api_key=api_key, **kwargs).auto_paging_iter()
+        _api_key = api_key
+        if cls.reseller:
+            from django.apps import apps
+            Reseller = apps.get_model("reseller", "Reseller")
+            _api_key = Reseller.objects.get(id=int(cls.reseller)).stripe_secret_key
+
+        return cls.stripe_class.list(api_key=_api_key, **kwargs).auto_paging_iter()
 
     @classmethod
     def _api_create(cls, api_key=djstripe_settings.STRIPE_SECRET_KEY, **kwargs):

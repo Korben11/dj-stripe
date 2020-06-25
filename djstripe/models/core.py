@@ -1234,21 +1234,34 @@ class Customer(StripeModel):
     def _sync_invoices(self, **kwargs):
         from .billing import Invoice
 
+        if self.reseller:
+            Invoice.reseller = self.reseller
+
         for stripe_invoice in Invoice.api_list(customer=self.id, **kwargs):
             Invoice.sync_from_stripe_data(stripe_invoice)
 
     def _sync_charges(self, **kwargs):
+
+        if self.reseller:
+            Charge.reseller = self.reseller
+
         for stripe_charge in Charge.api_list(customer=self.id, **kwargs):
             Charge.sync_from_stripe_data(stripe_charge)
 
     def _sync_cards(self, **kwargs):
         from .payment_methods import Card
 
+        if self.reseller:
+            Card.reseller = self.reseller
+
         for stripe_card in Card.api_list(customer=self, **kwargs):
             Card.sync_from_stripe_data(stripe_card)
 
     def _sync_subscriptions(self, **kwargs):
         from .billing import Subscription
+
+        if self.reseller:
+            Subscription.reseller = self.reseller
 
         for stripe_subscription in Subscription.api_list(
             customer=self.id, status="all", **kwargs

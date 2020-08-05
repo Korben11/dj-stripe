@@ -143,9 +143,9 @@ FileUploadType
     :undoc-members:
 
 
-InvoiceBilling
---------------
-.. autoclass:: djstripe.enums.InvoiceBilling
+InvoiceCollectionMethod
+-----------------------
+.. autoclass:: djstripe.enums.InvoiceCollectionMethod
     :members:
     :undoc-members:
 

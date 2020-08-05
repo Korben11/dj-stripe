@@ -111,7 +111,16 @@ def customer_subscription_webhook_handler(event):
     Docs an example subscription webhook response:
     https://stripe.com/docs/api#subscription_object
     """
-    _handle_crud_like_event(target_cls=models.Subscription, event=event)
+
+    # customer.subscription.deleted doesn't actually delete the subscription
+    # on the stripe side, it updates it to canceled status, so override
+    # crud_type to update to match.
+    crud_type = CrudType.determine(event=event)
+    if crud_type.deleted:
+        crud_type = CrudType(updated=True)
+    _handle_crud_like_event(
+        target_cls=models.Subscription, event=event, crud_type=crud_type
+    )
 
 
 @webhooks.handler("payment_method")
@@ -144,7 +153,6 @@ def payment_method_handler(event):
 
 
 @webhooks.handler(
-    "transfer",
     "charge",
     "coupon",
     "invoice",
@@ -154,21 +162,26 @@ def payment_method_handler(event):
     "product",
     "setup_intent",
     "source",
+    "tax_rate",
+    "transfer",
 )
 def other_object_webhook_handler(event):
     """
-    Handle updates to transfer, charge, coupon, invoice, invoiceitem, payment_intent,
-    plan, product, setup_intent and source objects.
+    Handle updates to charge, coupon, invoice, invoiceitem, payment_intent,
+    plan, product, setup_intent, source, tax_rate and transfer objects.
 
     Docs for:
-    - charge: https://stripe.com/docs/api#charges
-    - coupon: https://stripe.com/docs/api#coupons
-    - invoice: https://stripe.com/docs/api#invoices
-    - invoiceitem: https://stripe.com/docs/api#invoiceitems
-    - plan: https://stripe.com/docs/api#plans
-    - product: https://stripe.com/docs/api#products
-    - source: https://stripe.com/docs/api#sources
+    - charge: https://stripe.com/docs/api/charges
+    - coupon: https://stripe.com/docs/api/coupons
+    - invoice: https://stripe.com/docs/api/invoices
+    - invoiceitem: https://stripe.com/docs/api/invoiceitems
     - payment_intent: https://stripe.com/docs/api/payment_intents
+    - plan: https://stripe.com/docs/api/plans
+    - product: https://stripe.com/docs/api/products
+    - setup_intent: https://stripe.com/docs/api/setup_intents
+    - source: https://stripe.com/docs/api/sources
+    - tax_rate: https://stripe.com/docs/api/tax_rates/
+    - transfer: https://stripe.com/docs/api/transfers
     """
 
     if event.parts[:2] == ["charge", "dispute"]:
@@ -187,6 +200,7 @@ def other_object_webhook_handler(event):
             "transfer": models.Transfer,
             "setup_intent": models.SetupIntent,
             "source": models.Source,
+            "tax_rate": models.TaxRate,
         }.get(event.category)
 
     target_cls.reseller = event.reseller

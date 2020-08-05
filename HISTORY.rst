@@ -3,10 +3,88 @@
 History
 =======
 
-2.2.0 (unreleased)
+2.3.0 (2020-04-19)
 ------------------
 
-- Changed ``JSONField`` dependency package from `jsonfield`_ to `jsonfield2`_, for Django 3 compatibility (see `Warning about safe uninstall of jsonfield on upgrade`_).
+- Changed ``JSONField`` dependency back to `jsonfield`_ from `jsonfield2`_ (see `Warning about safe uninstall of jsonfield2 on upgrade`_).
+- Dropped support for Django 2.1 (#1056).
+- Dropped support for python 3.5 (#1073).
+- Fixed handling of ``TaxRate`` events (#1094).
+- Fixed pagination issue in ``Invoice.sync_from_stripe_data`` (#1052).
+- Fixed pagination issues in ``Subscription`` & ``Charge`` ``.sync_from_stripe_data`` (#1054).
+- Tidyup ``_stripe_object_set_total_tax_amounts`` unique handling (#1139).
+- Dropped previously-deprecated ``Invoice`` fields (see https://stripe.com/docs/upgrades#2018-11-08 ):
+    - ``.closed``
+    - ``.forgiven``
+    - ``.billing`` (renamed to ``.collection_method``)
+- Dropped previously-deprecated ``enums.InvoiceStatus`` (#1020).
+- Deprecated the following fields - will be removed in 2.4 (#1087):
+    - ``Subscription.billing`` (use ``.collection_method`` instead)
+    - ``Subscription.start`` (use ``.start_date`` instead)
+    - ``Subscription.tax_percent`` (use ``.default_tax_rates`` instead)
+- Added ``Invoice.status`` and ``enums.InvoiceStatus`` (#1020).
+- Fixed str(Account) crash when settings or business_profile were NULL (#1104).
+- Added new ``Invoice`` fields (#1020, #1087):
+    - ``.discount``
+    - ``.default_source``
+    - ``.status``
+- Added new ``Subscription`` fields (#1087):
+    - ``.default_payment_method``
+    - ``.default_source``
+    - ``.next_pending_invoice_item_invoice``
+    - ``.pending_invoice_item_interval``
+    - ``.pending_update``
+    - ``.start_date``
+
+Warning about safe uninstall of jsonfield2 on upgrade
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. warning::
+
+    Both **jsonfield** and **jsonfield2** use the same import path, so if upgrading from dj-stripe~=2.2.0
+    in an existing virtualenv, be sure to uninstall jsonfield2 first.  eg::
+
+        # ensure jsonfield is uninstalled before we install jsonfield2
+        pip uninstall jsonfield2 -y && pip install "dj-stripe>=2.3.0dev"
+
+
+    Otherwise, ``pip uninstall jsonfield2`` will remove jsonfield's ``jsonfield``
+    module from ``site-packages``, which would cause errors like
+    ``ImportError: cannot import name 'JSONField' from 'jsonfield' (unknown location)``
+
+    If you have hit this ImportError already after upgrading, running this should resolve it::
+
+        # remove both jsonfield packages before reinstall to fix ImportError:
+        pip uninstall jsonfield jsonfield2 -y && pip install "dj-stripe>=2.3.0dev"
+
+    Note that this is only necessary if upgrading from dj-stripe 2.2.x, which temporarily
+    depended on jsonfield2. This process is not necessary if upgrading from an earlier
+    version of dj-stripe.
+
+.. _jsonfield: https://github.com/rpkilby/jsonfield/
+.. _jsonfield2: https://github.com/rpkilby/jsonfield2/
+
+2.2.2 (2020-01-20)
+------------------
+
+This is a bugfix-only version:
+
+- Fixed handling of ``TaxRate`` events (#1094).
+
+2.2.1 (2020-01-14)
+------------------
+
+This is a bugfix-only version:
+
+- Fixed bad package build.
+
+2.2.0 (2020-01-13)
+------------------
+
+- Changed ``JSONField`` dependency package from `jsonfield`_ to `jsonfield2`_, for Django 3 compatibility (see `Warning about safe uninstall of jsonfield on upgrade`_). Note that Django 2.1 requires jsonfield<3.1.
+- Added support for Django 3.0 (requires jsonfield2>=3.0.3).
+- Added support for python 3.8.
+- Refactored ``UpcomingInvoice``, so it's no longer a subclass of ``Invoice`` (to allow ``Invoice`` to use ``ManyToManyFields``).
 - Dropped previously-deprecated ``Account`` fields (see https://stripe.com/docs/upgrades#2019-02-19 ):
     - ``.business_name``
     - ``.business_primary_color``
@@ -29,7 +107,16 @@ History
 - Dropped previously-deprecated enum ``PaymentMethodType`` (use ``DjstripePaymentMethodType`` instead)
 - Renamed ``Invoice.billing`` to ``.collection_method`` (added deprecated property for the old name).
 - Updated ``Invoice`` model to add missing fields.
+- Added ``TaxRate`` model, and ``Invoice.default_tax_rates``, ``InvoiceItem.tax_rates``,
+  ``Invoice.total_tax_amounts``, ``Subscription.default_tax_rates``, ``SubscriptionItem.tax_rates`` (#1027).
 - Change urls.py to use the new style urls.
+- Update forward relation fields in the admin to be raw id fields.
+- Updated ``StripeQuantumCurrencyAmountField`` and ``StripeDecimalCurrencyAmountField`` to support Stripe Large Charges (#1045).
+- Update event handling so ``customer.subscription.deleted`` updates subscriptions to ``status="canceled"`` instead of
+  deleting it from our database,  to match Stripe's behaviour (#599).
+- Added missing ``Refund.reason`` value, increases field width (#1075).
+- Fixed ``Refund.status`` definition, reduces field width (#1076).
+- Deprecated non-standard ``Invoice.status`` (renamed to ``Invoice.legacy_status``) to make way for the Stripe field (preparation for #1020).
 
 Warning about safe uninstall of jsonfield on upgrade
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -37,7 +124,7 @@ Warning about safe uninstall of jsonfield on upgrade
 .. warning::
 
     Both **jsonfield** and **jsonfield2** use the same import path, so if upgrading to dj-stripe>=2.2
-    in an existing virtualenv, sure to uninstall jsonfield first.  eg::
+    in an existing virtualenv, be sure to uninstall jsonfield first.  eg::
 
         # ensure jsonfield is uninstalled before we install jsonfield2
         pip uninstall jsonfield -y && pip install "dj-stripe>=2.2.0dev"
@@ -51,9 +138,15 @@ Warning about safe uninstall of jsonfield on upgrade
         # remove both jsonfield packages before reinstall to fix ImportError:
         pip uninstall jsonfield jsonfield2 -y && pip install "dj-stripe>=2.2.0dev"
 
-.. _jsonfield: https://github.com/dmkoch/django-jsonfield/
+.. _jsonfield: https://github.com/rpkilby/jsonfield/
 .. _jsonfield2: https://github.com/rpkilby/jsonfield2/
 
+Note on usage of Stripe Elements JS
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+See https://dj-stripe.readthedocs.io/en/latest/stripe_elements_js.html for notes about
+usage of the Stripe Elements frontend JS library.
+
+TLDR: if you haven't yet migrated to PaymentIntents, prefer ``stripe.createSource()`` to ``stripe.createToken()``.
 
 
 2.1.1 (2019-10-01)

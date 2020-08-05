@@ -746,7 +746,7 @@ class Customer(StripeModel):
         :type amount: Decimal. Precision is 2; anything more will be ignored.
         :param currency: 3-letter ISO code for currency
         :type currency: string
-        :param application_fee: A fee that will be applied to the charge and transfered
+        :param application_fee: A fee that will be applied to the charge and transferred
             to the platform owner's account.
         :type application_fee: Decimal. Precision is 2; anything more will be ignored.
         :param capture: Whether or not to immediately capture the charge.
@@ -917,8 +917,8 @@ class Customer(StripeModel):
         :param payment_method: PaymentMethod to be attached to the customer
         :type payment_method: str, PaymentMethod
         :param set_default: If true, this will be set as the default_payment_method
-        :type: bool
-        :return:
+        :type set_default: bool
+        :rtype: PaymentMethod
         """
         from .payment_methods import PaymentMethod
 
@@ -1118,7 +1118,7 @@ class Customer(StripeModel):
         """ Attempt to retry collecting payment on the customer's unpaid invoices."""
 
         self._sync_invoices()
-        for invoice in self.invoices.filter(paid=False, closed=False):
+        for invoice in self.invoices.filter(auto_advance=True).exclude(status="paid"):
             try:
                 invoice.retry()  # Always retry unpaid invoices
             except InvalidRequestError as exc:
@@ -1980,6 +1980,7 @@ class Refund(StripeModel):
         on_delete=models.SET_NULL,
         related_name="failure_refunds",
         null=True,
+        blank=True,
         help_text="If the refund failed, this balance transaction describes the "
         "adjustment made on your account balance that reverses the initial "
         "balance transaction.",
@@ -2004,7 +2005,7 @@ class Refund(StripeModel):
         "for this charge.",
     )
     status = StripeEnumField(
-        enum=enums.RefundFailureReason, help_text="Status of the refund."
+        blank=True, enum=enums.RefundStatus, help_text="Status of the refund."
     )
 
     def get_stripe_dashboard_url(self):

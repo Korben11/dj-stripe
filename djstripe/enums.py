@@ -326,8 +326,12 @@ class InvoiceCollectionMethod(Enum):
     send_invoice = _("Send invoice")
 
 
-# deprecated, will be removed in 2.3
-InvoiceBilling = InvoiceCollectionMethod
+class InvoiceStatus(Enum):
+    draft = _("Draft")
+    open = _("Open")
+    paid = _("Paid")
+    uncollectible = _("Uncollectible")
+    void = _("Void")
 
 
 class IntentUsage(Enum):
@@ -535,6 +539,7 @@ class RefundReason(Enum):
     duplicate = _("Duplicate charge")
     fraudulent = _("Fraudulent")
     requested_by_customer = _("Requested by customer")
+    expired_uncaptured_charge = _("Expired uncaptured charge")
 
 
 class RefundStatus(Enum):

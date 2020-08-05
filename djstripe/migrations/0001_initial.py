@@ -1352,7 +1352,7 @@ class Migration(migrations.Migration):
                 (
                     "billing",
                     djstripe.fields.StripeEnumField(
-                        enum=djstripe.enums.InvoiceBilling,
+                        enum=djstripe.enums.InvoiceCollectionMethod,
                         help_text="When charging automatically, Stripe will attempt to pay this invoice using the default source attached to the customer. When sending an invoice, Stripe will email this invoice to the customer with payment instructions.",
                         max_length=20,
                         null=True,
@@ -1438,7 +1438,7 @@ class Migration(migrations.Migration):
                     "paid",
                     models.BooleanField(
                         default=False,
-                        help_text="The time at which payment will next be attempted.",
+                        help_text="Whether payment was successfully collected for this invoice. An invoice can be paid (most commonly) with a charge or with credit from the customer’s account balance.",
                     ),
                 ),
                 (
@@ -2401,7 +2401,7 @@ class Migration(migrations.Migration):
                 (
                     "billing",
                     djstripe.fields.StripeEnumField(
-                        enum=djstripe.enums.InvoiceBilling,
+                        enum=djstripe.enums.InvoiceCollectionMethod,
                         help_text="Either `charge_automatically`, or `send_invoice`. When charging automatically, Stripe will attempt to pay this subscription at the end of the cycle using the default source attached to the customer. When sending an invoice, Stripe will email your customer an invoice with payment instructions.",
                         max_length=20,
                     ),

@@ -22,9 +22,11 @@ from . import (
     FAKE_PRODUCT,
     FAKE_SUBSCRIPTION,
     FAKE_SUBSCRIPTION_CANCELED,
+    FAKE_SUBSCRIPTION_II,
     FAKE_SUBSCRIPTION_METERED,
     FAKE_SUBSCRIPTION_MULTI_PLAN,
     FAKE_SUBSCRIPTION_NOT_PERIOD_CURRENT,
+    FAKE_TAX_RATE_EXAMPLE_1_VAT,
     AssertStripeFksMixin,
     datetime_to_unix,
 )
@@ -40,6 +42,8 @@ class SubscriptionTest(AssertStripeFksMixin, TestCase):
         self.default_expected_blank_fks = {
             "djstripe.Customer.coupon",
             "djstripe.Customer.default_payment_method",
+            "djstripe.Subscription.default_payment_method",
+            "djstripe.Subscription.default_source",
             "djstripe.Subscription.pending_setup_intent",
         }
 
@@ -50,7 +54,7 @@ class SubscriptionTest(AssertStripeFksMixin, TestCase):
     @patch(
         "stripe.Customer.retrieve", return_value=deepcopy(FAKE_CUSTOMER), autospec=True
     )
-    def test_str(
+    def test_sync_from_stripe_data(
         self, customer_retrieve_mock, product_retrieve_mock, plan_retrieve_mock
     ):
         subscription_fake = deepcopy(FAKE_SUBSCRIPTION)
@@ -63,8 +67,38 @@ class SubscriptionTest(AssertStripeFksMixin, TestCase):
             ),
         )
 
+        self.assertEqual(subscription.default_tax_rates.count(), 1)
+        self.assertEqual(
+            subscription.default_tax_rates.first().id, FAKE_TAX_RATE_EXAMPLE_1_VAT["id"]
+        )
+
         self.assert_fks(
             subscription, expected_blank_fks=self.default_expected_blank_fks
+        )
+
+    @patch("stripe.Plan.retrieve", return_value=deepcopy(FAKE_PLAN_II), autospec=True)
+    @patch(
+        "stripe.Product.retrieve", return_value=deepcopy(FAKE_PRODUCT), autospec=True
+    )
+    @patch(
+        "stripe.Customer.retrieve", return_value=deepcopy(FAKE_CUSTOMER), autospec=True
+    )
+    def test_sync_items_with_tax_rates(
+        self, customer_retrieve_mock, product_retrieve_mock, plan_retrieve_mock
+    ):
+        subscription_fake = deepcopy(FAKE_SUBSCRIPTION_II)
+        subscription = Subscription.sync_from_stripe_data(subscription_fake)
+
+        self.assert_fks(
+            subscription, expected_blank_fks=self.default_expected_blank_fks
+        )
+
+        self.assertEqual(subscription.default_tax_rates.count(), 0)
+        first_item = subscription.items.first()
+
+        self.assertEqual(first_item.tax_rates.count(), 1)
+        self.assertEqual(
+            first_item.tax_rates.first().id, FAKE_TAX_RATE_EXAMPLE_1_VAT["id"]
         )
 
     @patch("stripe.Plan.retrieve", return_value=deepcopy(FAKE_PLAN), autospec=True)
@@ -379,8 +413,8 @@ class SubscriptionTest(AssertStripeFksMixin, TestCase):
         canceled_subscription_fake["canceled_at"] = cancel_timestamp
         canceled_subscription_fake["ended_at"] = cancel_timestamp
         subscription_retrieve_mock.return_value = (
-            canceled_subscription_fake
-        )  # retrieve().delete()
+            canceled_subscription_fake  # retrieve().delete()
+        )
 
         self.assertTrue(self.customer.has_active_subscription())
         self.assertEqual(self.customer.active_subscriptions.count(), 1)
@@ -429,8 +463,8 @@ class SubscriptionTest(AssertStripeFksMixin, TestCase):
         )
         canceled_subscription_fake["canceled_at"] = datetime_to_unix(timezone.now())
         subscription_retrieve_mock.return_value = (
-            canceled_subscription_fake
-        )  # retrieve().delete()
+            canceled_subscription_fake  # retrieve().delete()
+        )
 
         self.assertTrue(self.customer.has_active_subscription())
         self.assertTrue(self.customer.has_any_active_subscription())
@@ -480,8 +514,8 @@ class SubscriptionTest(AssertStripeFksMixin, TestCase):
         canceled_subscription_fake["canceled_at"] = cancel_timestamp
         canceled_subscription_fake["ended_at"] = cancel_timestamp
         subscription_retrieve_mock.return_value = (
-            canceled_subscription_fake
-        )  # retrieve().delete()
+            canceled_subscription_fake  # retrieve().delete()
+        )
 
         self.assertTrue(self.customer.has_active_subscription())
         self.assertTrue(self.customer.has_any_active_subscription())

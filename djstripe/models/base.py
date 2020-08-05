@@ -576,6 +576,79 @@ class StripeModel(models.Model):
             return target_cls._get_or_create_from_stripe_object(data, "customer")[0]
 
     @classmethod
+    def _stripe_object_to_default_tax_rates(cls, target_cls, data):
+        """
+        Retrieves TaxRates for a Subscription or Invoice
+        :param target_cls:
+        :param data:
+        :param instance:
+        :type instance: Union[djstripe.models.Invoice, djstripe.models.Subscription]
+        :return:
+        """
+        tax_rates = []
+
+        for tax_rate_data in data.get("default_tax_rates", []):
+            tax_rate, _ = target_cls._get_or_create_from_stripe_object(
+                tax_rate_data, refetch=False
+            )
+            tax_rates.append(tax_rate)
+
+        return tax_rates
+
+    @classmethod
+    def _stripe_object_to_tax_rates(cls, target_cls, data):
+        """
+        Retrieves TaxRates for a SubscriptionItem or InvoiceItem
+        :param target_cls:
+        :param data:
+        :return:
+        """
+        tax_rates = []
+
+        for tax_rate_data in data.get("tax_rates", []):
+            tax_rate, _ = target_cls._get_or_create_from_stripe_object(
+                tax_rate_data, refetch=False
+            )
+            tax_rates.append(tax_rate)
+
+        return tax_rates
+
+    @classmethod
+    def _stripe_object_set_total_tax_amounts(cls, target_cls, data, instance):
+        """
+        Set total tax amounts on Invoice instance
+        :param target_cls:
+        :param data:
+        :param instance:
+        :type instance: djstripe.models.Invoice
+        :return:
+        """
+        from .billing import TaxRate
+
+        pks = []
+
+        for tax_amount_data in data.get("total_tax_amounts", []):
+            tax_rate_data = tax_amount_data["tax_rate"]
+            if isinstance(tax_rate_data, str):
+                tax_rate_data = {"tax_rate": tax_rate_data}
+
+            tax_rate, _ = TaxRate._get_or_create_from_stripe_object(
+                tax_rate_data, field_name="tax_rate", refetch=True
+            )
+            tax_amount, _ = target_cls.objects.update_or_create(
+                invoice=instance,
+                tax_rate=tax_rate,
+                defaults={
+                    "amount": tax_amount_data["amount"],
+                    "inclusive": tax_amount_data["inclusive"],
+                },
+            )
+
+            pks.append(tax_amount.pk)
+
+        instance.total_tax_amounts.exclude(pk__in=pks).delete()
+
+    @classmethod
     def _stripe_object_to_invoice_items(cls, target_cls, data, invoice):
         """
         Retrieves InvoiceItems for an invoice.
@@ -598,7 +671,7 @@ class StripeModel(models.Model):
             return []
 
         invoiceitems = []
-        for line in lines.get("data", []):
+        for line in lines.auto_paging_iter():
             if invoice.id:
                 save = True
                 line.setdefault("invoice", invoice.id)
@@ -647,7 +720,7 @@ class StripeModel(models.Model):
             return []
 
         subscriptionitems = []
-        for item_data in items.get("data", []):
+        for item_data in items.auto_paging_iter():
             item, _ = target_cls._get_or_create_from_stripe_object(
                 item_data, refetch=False
             )
@@ -673,7 +746,7 @@ class StripeModel(models.Model):
             return []
 
         refund_objs = []
-        for refund_data in refunds.get("data", []):
+        for refund_data in refunds.auto_paging_iter():
             item, _ = target_cls._get_or_create_from_stripe_object(
                 refund_data, refetch=False
             )

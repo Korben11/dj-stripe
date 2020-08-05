@@ -135,6 +135,15 @@ class Account(StripeModel):
 
         return cls._get_or_create_from_stripe_object(account_data)[0]
 
+    def __str__(self):
+        settings = self.settings or {}
+        business_profile = self.business_profile or {}
+        return (
+            settings.get("dashboard", {}).get("display_name")
+            or business_profile.get("name")
+            or super().__str__()
+        )
+
     @classmethod  # noqa: C901
     def _manipulate_stripe_object_hook(cls, data):
         data = super()._manipulate_stripe_object_hook(data)

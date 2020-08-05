@@ -50,7 +50,6 @@ from . import (
     FAKE_SUBSCRIPTION,
     FAKE_SUBSCRIPTION_II,
     FAKE_UPCOMING_INVOICE,
-    IS_ASSERT_CALLED_AUTOSPEC_SUPPORTED,
     IS_STATICMETHOD_AUTOSPEC_SUPPORTED,
     AssertStripeFksMixin,
     StripeList,
@@ -712,6 +711,7 @@ class TestCustomer(AssertStripeFksMixin, TestCase):
                 "djstripe.Account.branding_icon",
                 "djstripe.Charge.dispute",
                 "djstripe.Charge.latest_invoice (related name)",
+                "djstripe.Charge.latest_upcominginvoice (related name)",
                 "djstripe.Charge.invoice",
                 "djstripe.Charge.transfer",
                 "djstripe.Customer.coupon",
@@ -719,6 +719,7 @@ class TestCustomer(AssertStripeFksMixin, TestCase):
                 "djstripe.PaymentIntent.invoice (related name)",
                 "djstripe.PaymentIntent.on_behalf_of",
                 "djstripe.PaymentIntent.payment_method",
+                "djstripe.PaymentIntent.upcominginvoice (related name)",
             },
         )
 
@@ -739,6 +740,7 @@ class TestCustomer(AssertStripeFksMixin, TestCase):
                 "djstripe.Account.branding_icon",
                 "djstripe.Charge.dispute",
                 "djstripe.Charge.latest_invoice (related name)",
+                "djstripe.Charge.latest_upcominginvoice (related name)",
                 "djstripe.Charge.invoice",
                 "djstripe.Charge.transfer",
                 "djstripe.Customer.coupon",
@@ -746,6 +748,7 @@ class TestCustomer(AssertStripeFksMixin, TestCase):
                 "djstripe.PaymentIntent.invoice (related name)",
                 "djstripe.PaymentIntent.on_behalf_of",
                 "djstripe.PaymentIntent.payment_method",
+                "djstripe.PaymentIntent.upcominginvoice (related name)",
             },
         )
 
@@ -797,6 +800,7 @@ class TestCustomer(AssertStripeFksMixin, TestCase):
                 "djstripe.Account.branding_icon",
                 "djstripe.Charge.dispute",
                 "djstripe.Charge.latest_invoice (related name)",
+                "djstripe.Charge.latest_upcominginvoice (related name)",
                 "djstripe.Charge.invoice",
                 "djstripe.Charge.transfer",
                 "djstripe.Customer.coupon",
@@ -804,6 +808,7 @@ class TestCustomer(AssertStripeFksMixin, TestCase):
                 "djstripe.PaymentIntent.invoice (related name)",
                 "djstripe.PaymentIntent.on_behalf_of",
                 "djstripe.PaymentIntent.payment_method",
+                "djstripe.PaymentIntent.upcominginvoice (related name)",
             },
         )
 
@@ -818,6 +823,7 @@ class TestCustomer(AssertStripeFksMixin, TestCase):
                 "djstripe.Account.branding_icon",
                 "djstripe.Charge.dispute",
                 "djstripe.Charge.latest_invoice (related name)",
+                "djstripe.Charge.latest_upcominginvoice (related name)",
                 "djstripe.Charge.invoice",
                 "djstripe.Charge.transfer",
                 "djstripe.Customer.coupon",
@@ -825,6 +831,7 @@ class TestCustomer(AssertStripeFksMixin, TestCase):
                 "djstripe.PaymentIntent.invoice (related name)",
                 "djstripe.PaymentIntent.on_behalf_of",
                 "djstripe.PaymentIntent.payment_method",
+                "djstripe.PaymentIntent.upcominginvoice (related name)",
             },
         )
 
@@ -1737,9 +1744,7 @@ class TestCustomer(AssertStripeFksMixin, TestCase):
             self.customer.add_invoice_item(amount=5000, currency="usd")
 
     @patch(
-        "stripe.Plan.retrieve",
-        return_value=deepcopy(FAKE_PLAN),
-        autospec=IS_ASSERT_CALLED_AUTOSPEC_SUPPORTED,
+        "stripe.Plan.retrieve", return_value=deepcopy(FAKE_PLAN), autospec=True,
     )
     @patch(
         "stripe.Product.retrieve", return_value=deepcopy(FAKE_PRODUCT), autospec=True

@@ -12,6 +12,7 @@ import sys
 from copy import deepcopy
 from datetime import datetime
 from pathlib import Path
+from typing import Any
 
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import models
@@ -32,10 +33,6 @@ FIXTURE_DIR_PATH = Path(__file__).parent.joinpath("fixtures")
 # Don't try and use autospec=True on staticmethods on <py3.7
 # see https://bugs.python.org/issue23078
 IS_STATICMETHOD_AUTOSPEC_SUPPORTED = sys.version_info >= (3, 7, 4)
-
-# Don't try and use autospec=True with assert_called etc on py3.5
-# see https://bugs.python.org/issue28380
-IS_ASSERT_CALLED_AUTOSPEC_SUPPORTED = sys.version_info >= (3, 6)
 
 
 class AssertStripeFksMixin:
@@ -96,19 +93,100 @@ def datetime_to_unix(datetime_):
     return int(dateformat.format(datetime_, "U"))
 
 
+class StripeItem(dict):
+    """Flexible class built to mock any generic Stripe object.
+
+    Implements object access + deletion methods to match the behavior
+    of Stripe's library, which allows both object + dictionary access.
+
+    Has a delete method since (most) Stripe objects can be deleted.
+    """
+
+    def __getattr__(self, name):
+        """Give StripeItem normal object access to match Stripe behavior."""
+        if name in self:
+            return self[name]
+        else:
+            raise AttributeError("No such attribute: " + name)
+
+    def __setattr__(self, name, value):
+        self[name] = value
+
+    def __delattr__(self, name):
+        if name in self:
+            del self[name]
+        else:
+            raise AttributeError("No such attribute: " + name)
+
+    def delete(self) -> bool:
+        """Superficial mock that adds a deleted attribute."""
+        self.deleted = True
+
+        return self.deleted
+
+
 class StripeList(dict):
+    """Mock a generic Stripe Iterable.
+
+    It has the relevant attributes of a stripe iterable (has_more, data).
+
+    This mock is important so we can use stripe's `list` method in our testing.
+    StripeList.list() will return the StripeList.
+
+    Additionally, iterating over instances of MockStripeIterable will iterate over
+    the data attribute, just like Stripe iterables.
+
+    Attributes:
+        has_more: mock has_more flag. Default False.
+        **kwargs: all of the fields of the stripe object, generally as a dictionary.
+    """
+
     object = "list"
-    has_more = False
     url = "/v1/fakes"
+    has_more = False
 
-    def __init__(self, data):
-        self.data = data
+    def __getattr__(self, name):
+        """Give StripeItem normal object access to match Stripe behavior."""
+        if name in self:
+            return self[name]
+        else:
+            raise AttributeError("No such attribute: " + name)
 
-    def __getitem__(self, key):
-        return self.getattr(key)
+    def __setattr__(self, name, value):
+        self[name] = value
 
-    def auto_paging_iter(self):
-        return self.data
+    def __delattr__(self, name):
+        if name in self:
+            del self[name]
+        else:
+            raise AttributeError("No such attribute: " + name)
+
+    def __iter__(self) -> Any:
+        """Make StripeList an iterable, to match the Stripe iterable behavior."""
+        self.iter_copy = self.data.copy()
+        return self
+
+    def __next__(self) -> StripeItem:
+        """Define iteration for StripeList."""
+        if len(self.iter_copy) > 0:
+            return self.iter_copy.pop(0)
+        else:
+            raise StopIteration()
+
+    def list(self, **kwargs: Any) -> "StripeList":
+        """Add a list method to the StripeList which returns itself.
+
+        list() accepts arbitrary kwargs, be careful is you expect the
+        argument-accepting functionality of Stripe's list() method.
+        """
+        return self
+
+    def auto_paging_iter(self) -> "StripeList":
+        """Add an auto_paging_iter method to the StripeList which returns itself.
+
+        The StripeList is an iterable, so this mimics the real behavior.
+        """
+        return self
 
     @property
     def total_count(self):
@@ -457,7 +535,12 @@ FAKE_SESSION_I = {
 }
 
 
-class ChargeDict(dict):
+class ChargeDict(StripeItem):
+    def __init__(self, *args, **kwargs):
+        """Match Stripe's behavior: return a stripe iterable on `charge.refunds`."""
+        super().__init__(*args, **kwargs)
+        self.refunds = StripeList(self.refunds)
+
     def refund(self, amount=None, reason=None):
         self.update({"refunded": True, "amount_refunded": amount})
         return self
@@ -671,7 +754,7 @@ FAKE_PLAN_METERED = {
     "active": True,
     "aggregate_usage": "sum",
     "amount": 200,
-    "billing_scheme": "per_unit",
+    "collection_method": "per_unit",
     "created": 1552632817,
     "currency": "usd",
     "interval": "month",
@@ -688,7 +771,12 @@ FAKE_PLAN_METERED = {
 }
 
 
-class SubscriptionDict(dict):
+class SubscriptionDict(StripeItem):
+    def __init__(self, *args, **kwargs):
+        """Match Stripe's behavior: return a stripe iterable on `subscription.items`."""
+        super().__init__(*args, **kwargs)
+        self["items"] = StripeList(self["items"])
+
     def __setattr__(self, name, value):
         if type(value) == datetime:
             value = datetime_to_unix(value)
@@ -748,7 +836,7 @@ FAKE_SUBSCRIPTION_METERED = SubscriptionDict(
         "id": "sub_1rn1dp7WgjMtx9",
         "object": "subscription",
         "application_fee_percent": None,
-        "billing": "charge_automatically",
+        "collection_method": "charge_automatically",
         "cancel_at_period_end": False,
         "canceled_at": None,
         "current_period_end": 1441907581,
@@ -772,6 +860,7 @@ FAKE_SUBSCRIPTION_METERED = SubscriptionDict(
         "plan": deepcopy(FAKE_PLAN_METERED),
         "quantity": 1,
         "start": 1439229181,
+        "start_date": 1439229181,
         "status": "active",
         "tax_percent": None,
         "trial_end": None,
@@ -867,12 +956,18 @@ FAKE_DISCOUNT_CUSTOMER = {
 }
 
 
-class InvoiceDict(dict):
+class InvoiceDict(StripeItem):
+    def __init__(self, *args, **kwargs):
+        """Match Stripe's behavior: return a stripe iterable on `invoice.lines`."""
+        super().__init__(*args, **kwargs)
+        self.lines = StripeList(self.lines)
+
     def pay(self):
         return self
 
 
 FAKE_INVOICE = InvoiceDict(load_fixture("invoice_in_fakefakefakefakefake0001.json"))
+FAKE_INVOICE_IV = InvoiceDict(load_fixture("invoice_in_fakefakefakefakefake0004.json"))
 
 
 FAKE_INVOICE_II = InvoiceDict(
@@ -886,7 +981,7 @@ FAKE_INVOICE_II = InvoiceDict(
         "attempt_count": 1,
         "attempted": True,
         "auto_advance": True,
-        "billing": "charge_automatically",
+        "collection_method": "charge_automatically",
         "charge": FAKE_CHARGE_II["id"],
         "currency": "usd",
         "customer": "cus_4UbFSo9tl62jqj",
@@ -949,7 +1044,7 @@ FAKE_INVOICE_III = InvoiceDict(
         "attempt_count": 0,
         "attempted": True,
         "auto_advance": True,
-        "billing": "charge_automatically",
+        "collection_method": "charge_automatically",
         "charge": None,
         "created": 1439425915,
         "currency": "usd",
@@ -1010,12 +1105,27 @@ FAKE_UPCOMING_INVOICE = InvoiceDict(
         "application_fee_amount": None,
         "attempt_count": 1,
         "attempted": False,
-        "billing": "charge_automatically",
+        "collection_method": "charge_automatically",
         "charge": None,
         "created": 1439218864,
         "currency": "usd",
         "customer": FAKE_CUSTOMER["id"],
         "description": None,
+        "default_tax_rates": [
+            {
+                "id": "txr_fakefakefakefakefake0001",
+                "object": "tax_rate",
+                "active": True,
+                "created": 1570921289,
+                "description": None,
+                "display_name": "VAT",
+                "inclusive": True,
+                "jurisdiction": "Example1",
+                "livemode": False,
+                "metadata": {"djstripe_test_fake_id": "txr_fakefakefakefakefake0001"},
+                "percentage": 15.0,
+            }
+        ],
         "discount": None,
         "due_date": None,
         "ending_balance": None,
@@ -1035,6 +1145,14 @@ FAKE_UPCOMING_INVOICE = InvoiceDict(
                     "proration": False,
                     "quantity": 1,
                     "subscription": None,
+                    "tax_amounts": [
+                        {
+                            "amount": 261,
+                            "inclusive": True,
+                            "tax_rate": "txr_fakefakefakefakefake0001",
+                        }
+                    ],
+                    "tax_rates": [],
                     "type": "subscription",
                 }
             ],
@@ -1054,11 +1172,23 @@ FAKE_UPCOMING_INVOICE = InvoiceDict(
         "statement_descriptor": None,
         "subscription": FAKE_SUBSCRIPTION["id"],
         "subtotal": 2000,
-        "tax": None,
+        "tax": 261,
         "tax_percent": None,
         "total": 2000,
+        "total_tax_amounts": [
+            {
+                "amount": 261,
+                "inclusive": True,
+                "tax_rate": "txr_fakefakefakefakefake0001",
+            }
+        ],
         "webhooks_delivered_at": 1439218870,
     }
+)
+
+FAKE_TAX_RATE_EXAMPLE_1_VAT = load_fixture("tax_rate_txr_fakefakefakefakefake0001.json")
+FAKE_TAX_RATE_EXAMPLE_2_SALES = load_fixture(
+    "tax_rate_txr_fakefakefakefakefake0002.json"
 )
 
 FAKE_INVOICEITEM = {
@@ -1098,6 +1228,29 @@ FAKE_INVOICEITEM_II = {
     "quantity": None,
     "subscription": None,
 }
+
+# Invoice item with tax_rates
+# TODO generate this
+FAKE_INVOICEITEM_III = {
+    "id": "ii_16XVTY2eZvKYlo2Cxz5n3RaS",
+    "object": "invoiceitem",
+    "amount": 2000,
+    "currency": "usd",
+    "customer": FAKE_CUSTOMER_II["id"],
+    "date": 1439033216,
+    "description": "One-time setup fee",
+    "discountable": True,
+    "invoice": FAKE_INVOICE_II["id"],
+    "livemode": False,
+    "metadata": {"key1": "value1", "key2": "value2"},
+    "period": {"start": 1439033216, "end": 1439033216},
+    "plan": None,
+    "proration": False,
+    "quantity": None,
+    "subscription": None,
+    "tax_rates": [FAKE_TAX_RATE_EXAMPLE_1_VAT],
+}
+
 
 FAKE_TRANSFER = {
     "id": "tr_16Y9BK2eZvKYlo2CR0ySu1BA",

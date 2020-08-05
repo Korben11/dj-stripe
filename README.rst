@@ -1,7 +1,7 @@
 dj-stripe
 =========
 
-.. image:: https://travis-ci.org/dj-stripe/dj-stripe.png
+.. image:: https://travis-ci.org/dj-stripe/dj-stripe.svg?branch=master
    :alt: Build Status
    :target: https://travis-ci.org/dj-stripe/dj-stripe
 
@@ -34,8 +34,8 @@ Features
 Requirements
 ------------
 
-* Django >= 2.1
-* Python >= 3.5
+* Django >= 2.2
+* Python >= 3.6
 * Supports Stripe exclusively. For PayPal, see `dj-paypal <https://github.com/HearthSim/dj-paypal>`_ instead.
 * PostgreSQL engine (recommended): >= 9.4
 * MySQL engine: MariaDB >= 10.2 or MySQL >= 5.7
@@ -60,6 +60,12 @@ Add ``djstripe`` to your ``INSTALLED_APPS``:
         ...
     )
 
+Add to urls.py:
+
+.. code-block:: python
+
+    path("stripe/", include("djstripe.urls", namespace="djstripe")),
+
 Tell Stripe about the webhook (Stripe webhook docs can be found `here <https://stripe.com/docs/webhooks>`_) using the full URL of your endpoint from the urls.py step above (e.g. ``https://example.com/stripe/webhook``).
 
 Add your Stripe keys and set the operating mode:
@@ -75,12 +81,6 @@ Add your Stripe keys and set the operating mode:
 
 Add some payment plans via the Stripe.com dashboard.
 
-Add to urls.py:
-
-.. code-block:: python
-
-    path("stripe/", include("djstripe.urls", namespace="djstripe")),
-
 Run the commands::
 
     python manage.py migrate
@@ -89,6 +89,8 @@ Run the commands::
 
     python manage.py djstripe_sync_plans_from_stripe
 
+See https://dj-stripe.readthedocs.io/en/latest/stripe_elements_js.html for notes about
+usage of the Stripe Elements frontend JS library.
 
 Running the Tests
 ------------------

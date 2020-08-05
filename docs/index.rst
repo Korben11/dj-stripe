@@ -4,8 +4,8 @@ Django + Stripe Made Easy
 * Subscription management
 * Designed for easy implementation of post-registration subscription forms
 * Single-unit purchases
-* Works with Django >= 2.1
-* Works with Python >= 3.5
+* Works with Django >= 2.2
+* Works with Python >= 3.6
 * Built-in migrations
 * Dead-Easy installation
 * Leverages the best of the 3rd party Django package ecosystem
@@ -21,6 +21,7 @@ Contents
 
    installation
    api_versions
+   stripe_elements_js
 
 .. toctree::
    :caption: Usage

@@ -135,6 +135,9 @@
                 "default_tax_rates": [],
                 "discount": null,
                 "ended_at": null,
+                "invoice_customer_balance_settings": {
+                    "consume_applied_balance_on_void": true
+                },
                 "items": {
                     "object": "list",
                     "data": [
@@ -168,18 +171,36 @@
                             },
                             "quantity": 1,
                             "subscription": "sub_fakefakefakefakefake0002",
-                            "tax_rates": []
+                            "tax_rates": [
+                                {
+                                    "id": "txr_fakefakefakefakefake0001",
+                                    "object": "tax_rate",
+                                    "active": true,
+                                    "created": 1570944265,
+                                    "description": null,
+                                    "display_name": "VAT",
+                                    "inclusive": true,
+                                    "jurisdiction": "Example1",
+                                    "livemode": false,
+                                    "metadata": {
+                                        "djstripe_test_fake_id": "txr_fakefakefakefakefake0001"
+                                    },
+                                    "percentage": 15.0
+                                }
+                            ]
                         }
                     ],
                     "has_more": false,
                     "total_count": 1,
                     "url": "/v1/subscription_items?subscription=sub_fakefakefakefakefake0002"
                 },
-                "latest_invoice": "in_1EhAAgCOCguPTL2BajlVgKGV",
+                "latest_invoice": "in_fakefakefakefakefake0004",
                 "livemode": false,
                 "metadata": {
                     "djstripe_test_fake_id": "sub_fakefakefakefakefake0002"
                 },
+                "next_pending_invoice_item_invoice": null,
+                "pending_invoice_item_interval": null,
                 "pending_setup_intent": null,
                 "plan": {
                     "id": "silver41294",
@@ -230,9 +251,28 @@
                 "days_until_due": null,
                 "default_payment_method": null,
                 "default_source": null,
-                "default_tax_rates": [],
+                "default_tax_rates": [
+                    {
+                        "id": "txr_fakefakefakefakefake0001",
+                        "object": "tax_rate",
+                        "active": true,
+                        "created": 1570921289,
+                        "description": null,
+                        "display_name": "VAT",
+                        "inclusive": true,
+                        "jurisdiction": "Example1",
+                        "livemode": false,
+                        "metadata": {
+                            "djstripe_test_fake_id": "txr_fakefakefakefakefake0001"
+                        },
+                        "percentage": 15.0
+                    }
+                ],
                 "discount": null,
                 "ended_at": null,
+                "invoice_customer_balance_settings": {
+                    "consume_applied_balance_on_void": true
+                },
                 "items": {
                     "object": "list",
                     "data": [
@@ -278,6 +318,8 @@
                 "metadata": {
                     "djstripe_test_fake_id": "sub_fakefakefakefakefake0001"
                 },
+                "next_pending_invoice_item_invoice": null,
+                "pending_invoice_item_interval": null,
                 "pending_setup_intent": null,
                 "plan": {
                     "id": "gold21323",

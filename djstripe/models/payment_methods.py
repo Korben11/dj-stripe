@@ -112,7 +112,7 @@ class LegacySourceMixin:
         #     the correct object to use.
 
         _api_key = api_key
-        if cls.reseller:
+        if cls.reseller and isinstance(cls.reseller, str):
             from django.apps import apps
             Reseller = apps.get_model("reseller", "Reseller")
             _api_key = Reseller.objects.get(id=int(cls.reseller)).stripe_secret_key

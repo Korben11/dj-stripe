@@ -485,6 +485,9 @@ class StripeModel(models.Model):
         :return:
         :rtype: cls, bool
         """
+
+        __reseller = data.get("reseller", None)
+
         field = data.get(field_name)
         is_nested_data = field_name != "id"
         should_expand = False
@@ -543,6 +546,8 @@ class StripeModel(models.Model):
             # avoid TransactionManagementError on subsequent queries in case
             # of the IntegrityError catch below. See PR #903
             with transaction.atomic():
+                data["reseller"] = __reseller
+                cls.reseller = __reseller
                 return (
                     cls._create_from_stripe_object(
                         data,

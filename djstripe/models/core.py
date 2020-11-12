@@ -581,6 +581,7 @@ class Customer(StripeModel):
                         subscriber,
                         idempotency_key=idempotency_key,
                         stripe_account=stripe_account,
+                        currency=currency
                     ),
                     True,
                 )

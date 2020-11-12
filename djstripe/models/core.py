@@ -543,6 +543,7 @@ class Customer(StripeModel):
         subscriber,
         livemode=djstripe_settings.STRIPE_LIVE_MODE,
         stripe_account=None,
+        currency=None
     ):
         """
         Get or create a dj-stripe customer.
@@ -556,23 +557,36 @@ class Customer(StripeModel):
         """
 
         try:
-            return Customer.objects.get(subscriber=subscriber, livemode=livemode), False
+            if currency is None:
+                return Customer.objects.get(subscriber=subscriber, livemode=livemode), False
+            else:
+                return Customer.objects.get(subscriber=subscriber, livemode=livemode, currency=currency), False
         except Customer.DoesNotExist:
             action = "create:{}".format(subscriber.pk)
             idempotency_key = djstripe_settings.get_idempotency_key(
                 "customer", action, livemode
             )
-            return (
-                cls.create(
-                    subscriber,
-                    idempotency_key=idempotency_key,
-                    stripe_account=stripe_account,
-                ),
-                True,
-            )
+            if currency is None:
+                return (
+                    cls.create(
+                        subscriber,
+                        idempotency_key=idempotency_key,
+                        stripe_account=stripe_account,
+                    ),
+                    True,
+                )
+            else:
+                return (
+                    cls.create(
+                        subscriber,
+                        idempotency_key=idempotency_key,
+                        stripe_account=stripe_account,
+                    ),
+                    True,
+                )
 
     @classmethod
-    def create(cls, subscriber, idempotency_key=None, stripe_account=None):
+    def create(cls, subscriber, idempotency_key=None, stripe_account=None, currency=None):
         metadata = {}
         subscriber_key = djstripe_settings.SUBSCRIBER_CUSTOMER_KEY
         if subscriber_key not in ("", None):
@@ -584,15 +598,19 @@ class Customer(StripeModel):
             metadata=metadata,
             stripe_account=stripe_account,
         )
-        customer, created = Customer.objects.get_or_create(
-            id=stripe_customer["id"],
-            defaults={
+        customer_kwargs = {
+            "id": stripe_customer["id"],
+            "defaults": {
                 "subscriber": subscriber,
                 "livemode": stripe_customer["livemode"],
                 "balance": stripe_customer.get("balance", 0),
                 "delinquent": stripe_customer.get("delinquent", False),
             },
-        )
+        }
+        if not (currency is None):
+            customer_kwargs["currency"] = currency
+
+        customer, created = Customer.objects.get_or_create(**customer_kwargs)
 
         return customer
 

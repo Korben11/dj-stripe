@@ -555,7 +555,7 @@ class Customer(StripeModel):
         :param livemode: Whether to get the subscriber in live or test mode.
         :type livemode: bool
         """
-
+        currency = currency if currency else subscriber.currency
         try:
             if currency is None:
                 return Customer.objects.get(subscriber=subscriber, livemode=livemode), False

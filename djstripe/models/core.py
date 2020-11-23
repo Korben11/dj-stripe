@@ -552,17 +552,34 @@ class Customer(StripeModel):
         :param livemode: Whether to get the subscriber in live or test mode.
         :type livemode: bool
         """
+        reseller_id = ""
+        if subscriber.reseller:
+            reseller_id = str(subscriber.reseller_id)
+
         try:
-            return Customer.objects.get(subscriber=subscriber, livemode=livemode, currency__isnull=True), False
+            filter_kwargs = {
+                "subscriber": subscriber,
+                "livemode": livemode,
+                "currency__isnull": True
+            }
+            if reseller_id:
+                filter_kwargs["reseller"] = reseller_id
+            else:
+                return Customer.objects.get(**filter_kwargs), False
         except Customer.DoesNotExist:
             pass
 
         currency = currency if currency else subscriber.currency
         try:
-            if currency is None:
-                return Customer.objects.get(subscriber=subscriber, livemode=livemode), False
-            else:
-                return Customer.objects.get(subscriber=subscriber, livemode=livemode, currency=currency), False
+            filter_kwargs = {
+                "subscriber": subscriber,
+                "livemode": livemode,
+            }
+            if currency:
+                filter_kwargs["currency"] = currency
+            if reseller_id:
+                filter_kwargs["reseller"] = reseller_id
+            return Customer.objects.get(**filter_kwargs), False
         except Customer.DoesNotExist:
             action = "create:{}".format(subscriber.pk)
             idempotency_key = djstripe_settings.get_idempotency_key(
@@ -574,6 +591,7 @@ class Customer(StripeModel):
                         subscriber,
                         idempotency_key=idempotency_key,
                         stripe_account=stripe_account,
+                        reseller=reseller_id
                     ),
                     True,
                 )
@@ -583,13 +601,15 @@ class Customer(StripeModel):
                         subscriber,
                         idempotency_key=idempotency_key,
                         stripe_account=stripe_account,
-                        currency=currency
+                        currency=currency,
+                        reseller=reseller_id
                     ),
                     True,
                 )
 
     @classmethod
-    def create(cls, subscriber, idempotency_key=None, stripe_account=None, currency=None):
+    def create(cls, subscriber, idempotency_key=None, stripe_account=None,
+               currency=None, reseller=None):
         metadata = {}
         subscriber_key = djstripe_settings.SUBSCRIBER_CUSTOMER_KEY
         if subscriber_key not in ("", None):
@@ -609,6 +629,7 @@ class Customer(StripeModel):
                 "balance": stripe_customer.get("balance", 0),
                 "delinquent": stripe_customer.get("delinquent", False),
             },
+            "reseller": reseller
         }
         if not (currency is None):
             customer_kwargs["currency"] = currency

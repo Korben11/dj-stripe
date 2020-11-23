@@ -560,7 +560,7 @@ class Customer(StripeModel):
             filter_kwargs = {
                 "subscriber": subscriber,
                 "livemode": livemode,
-                "currency__isnull": True
+                "currency": ""
             }
             if reseller_id:
                 filter_kwargs["reseller"] = reseller_id
@@ -568,6 +568,8 @@ class Customer(StripeModel):
                 return Customer.objects.get(**filter_kwargs), False
         except Customer.DoesNotExist:
             pass
+        except Customer.MultipleObjectsReturned:
+            return Customer.objects.filter(**filter_kwargs).first(), False
 
         currency = currency if currency else subscriber.currency
         try:
@@ -606,6 +608,8 @@ class Customer(StripeModel):
                     ),
                     True,
                 )
+        except Customer.MultipleObjectsReturned:
+            return Customer.objects.filter(**filter_kwargs).first(), False
 
     @classmethod
     def create(cls, subscriber, idempotency_key=None, stripe_account=None,

@@ -572,15 +572,15 @@ class Customer(StripeModel):
             return Customer.objects.filter(**filter_kwargs).first(), False
 
         currency = currency if currency else subscriber.currency
+        filter_kwargs = {
+            "subscriber": subscriber,
+            "livemode": livemode,
+        }
+        if currency:
+            filter_kwargs["currency"] = currency
+        if reseller_id:
+            filter_kwargs["reseller"] = reseller_id
         try:
-            filter_kwargs = {
-                "subscriber": subscriber,
-                "livemode": livemode,
-            }
-            if currency:
-                filter_kwargs["currency"] = currency
-            if reseller_id:
-                filter_kwargs["reseller"] = reseller_id
             return Customer.objects.get(**filter_kwargs), False
         except Customer.DoesNotExist:
             action = "create:{}".format(subscriber.pk)

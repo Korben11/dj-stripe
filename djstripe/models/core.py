@@ -555,17 +555,16 @@ class Customer(StripeModel):
         reseller_id = ""
         if subscriber.reseller:
             reseller_id = str(subscriber.reseller_id)
-
+            cls.reseller = reseller_id
+        filter_kwargs = {
+            "subscriber": subscriber,
+            "livemode": livemode,
+            "currency": ""
+        }
+        if reseller_id:
+            filter_kwargs["reseller"] = reseller_id
         try:
-            filter_kwargs = {
-                "subscriber": subscriber,
-                "livemode": livemode,
-                "currency": ""
-            }
-            if reseller_id:
-                filter_kwargs["reseller"] = reseller_id
-            else:
-                return Customer.objects.get(**filter_kwargs), False
+            return Customer.objects.get(**filter_kwargs), False
         except Customer.DoesNotExist:
             pass
         except Customer.MultipleObjectsReturned:

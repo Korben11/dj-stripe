@@ -1,6 +1,7 @@
 import decimal
 
 import stripe
+from time import sleep
 from django.db import models, transaction
 from django.utils import timezone
 from django.utils.functional import cached_property
@@ -763,6 +764,8 @@ class Customer(StripeModel):
 
         if charge_immediately:
             self.send_invoice()
+
+        sleep(5)
 
         return Subscription.sync_from_stripe_data(stripe_subscription)
 

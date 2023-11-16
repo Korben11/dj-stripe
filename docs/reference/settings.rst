@@ -180,7 +180,7 @@ DJSTRIPE_USE_NATIVE_JSONFIELD (=False)
 ======================================
 
 Setting this to ``True`` will make the various dj-stripe JSON fields use
-``django.contrib.postgres.fields.JSONField`` instead of the ``jsonfield``
+``django.db.models.JSONField`` instead of the ``jsonfield``
 library (which internally uses ``text`` fields).
 
 The native Django JSONField uses the postgres `jsonb`_ column type, which

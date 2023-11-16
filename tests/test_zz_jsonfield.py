@@ -15,7 +15,7 @@ from djstripe import fields as fields
 from djstripe import settings as djstripe_settings
 
 try:
-    from django.contrib.postgres.fields import JSONField as DjangoJSONField
+    from django.db.models import JSONField as DjangoJSONField
 except ImportError:
     pass
 

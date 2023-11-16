@@ -10,7 +10,7 @@ from .settings import USE_NATIVE_JSONFIELD
 from .utils import convert_tstamp
 
 if USE_NATIVE_JSONFIELD:
-    from django.contrib.postgres.fields import JSONField as BaseJSONField
+    from django.db.models import JSONField as BaseJSONField
 else:
     from jsonfield import JSONField as BaseJSONField
 

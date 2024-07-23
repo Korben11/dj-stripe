@@ -682,6 +682,7 @@ class Customer(StripeModel):
         trial_end=None,
         trial_from_plan=None,
         trial_period_days=None,
+        default_payment_method=None,
     ):
         """
         Subscribes this customer to a plan.
@@ -735,6 +736,8 @@ class Customer(StripeModel):
             This will always overwrite any trials that might apply
             via a subscribed plan.
         :type trial_period_days: integer
+        :type default_payment_method: string
+        :type default_tax_rates: dict
 
         .. Notes:
         .. ``charge_immediately`` is only available on ``Customer.subscribe()``
@@ -747,20 +750,24 @@ class Customer(StripeModel):
         if isinstance(plan, StripeModel):
             plan = plan.id
 
-        stripe_subscription = Subscription._api_create(
-            plan=plan,
-            customer=self.id,
-            application_fee_percent=application_fee_percent,
-            coupon=coupon,
-            quantity=quantity,
-            metadata=metadata,
-            billing_cycle_anchor=billing_cycle_anchor,
-            tax_percent=tax_percent,
-            default_tax_rates=default_tax_rates,
-            trial_end=trial_end,
-            trial_from_plan=trial_from_plan,
-            trial_period_days=trial_period_days,
-        )
+        args = {
+            "plan": plan,
+            "customer": self.id,
+            "application_fee_percent": application_fee_percent,
+            "coupon": coupon,
+            "quantity": quantity,
+            "metadata": metadata,
+            "billing_cycle_anchor": billing_cycle_anchor,
+            "tax_percent": tax_percent,
+            "default_tax_rates": default_tax_rates,
+            "trial_end": trial_end,
+            "trial_from_plan": trial_from_plan,
+            "trial_period_days": trial_period_days
+        }
+        if default_payment_method:
+            args["default_payment_method"] = default_payment_method
+
+        stripe_subscription = Subscription._api_create(**args)
 
         if charge_immediately:
             self.send_invoice()

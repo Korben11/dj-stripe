@@ -9,7 +9,6 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.models import AnonymousUser
 from django.core.exceptions import ImproperlyConfigured
 from django.db.models.query import QuerySet
-from django.utils import timezone
 
 ANONYMOUS_USER_ERROR_MSG = (
     "dj-stripe's payment checking mechanisms require the user "
@@ -100,7 +99,7 @@ def get_supported_currency_choices(api_key):
 def clear_expired_idempotency_keys():
     from .models import IdempotencyKey
 
-    threshold = timezone.now() - datetime.timedelta(hours=24)
+    threshold = datetime.datetime.now() - datetime.timedelta(hours=24)
     IdempotencyKey.objects.filter(created__lt=threshold).delete()
 
 
@@ -115,7 +114,7 @@ def convert_tstamp(response):
         return response
 
     # Overrides the set timezone to UTC - I think...
-    tz = timezone.utc if settings.USE_TZ else None
+    tz = datetime.timezone.utc if settings.USE_TZ else None
 
     return datetime.datetime.fromtimestamp(response, tz)
 

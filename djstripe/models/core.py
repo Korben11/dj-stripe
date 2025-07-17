@@ -1,9 +1,9 @@
 import decimal
 
 import stripe
+import datetime
 from time import sleep
 from django.db import models, transaction
-from django.utils import timezone
 from django.utils.functional import cached_property
 from stripe.error import InvalidRequestError
 
@@ -1026,7 +1026,7 @@ class Customer(StripeModel):
         for source in self.sources.all():
             source.detach()
 
-        self.date_purged = timezone.now()
+        self.date_purged = datetime.datetime.now()
         self.save()
 
     # TODO: Override Queryset.delete() with a custom manager,
@@ -1109,7 +1109,7 @@ class Customer(StripeModel):
         """
         return self.subscriptions.filter(
             status=enums.SubscriptionStatus.active,
-            current_period_end__gt=timezone.now(),
+            current_period_end__gt=datetime.datetime.now(),
         )
 
     @property

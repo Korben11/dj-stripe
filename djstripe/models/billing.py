@@ -2,8 +2,8 @@ import warnings
 from copy import deepcopy
 
 import stripe
+import datetime
 from django.db import models
-from django.utils import timezone
 from django.utils.text import format_lazy
 from django.utils.translation import gettext_lazy as _
 from stripe.error import InvalidRequestError
@@ -1520,7 +1520,7 @@ class Subscription(StripeModel):
         if delta.total_seconds() < 0:
             raise ValueError("delta must be a positive timedelta.")
 
-        if self.trial_end is not None and self.trial_end > timezone.now():
+        if self.trial_end is not None and self.trial_end > datetime.datetime.now():
             period_end = self.trial_end
         else:
             period_end = self.current_period_end
@@ -1562,7 +1562,7 @@ class Subscription(StripeModel):
         # If plan has trial days and customer cancels before
         # trial period ends, then end subscription now,
         # i.e. at_period_end=False
-        if self.trial_end and self.trial_end > timezone.now():
+        if self.trial_end and self.trial_end > datetime.datetime.now():
             at_period_end = False
 
         if at_period_end:
@@ -1609,8 +1609,8 @@ class Subscription(StripeModel):
         Returns True if this subscription's period is current, false otherwise.
         """
 
-        return self.current_period_end > timezone.now() or (
-            self.trial_end and self.trial_end > timezone.now()
+        return self.current_period_end > datetime.datetime.now() or (
+            self.trial_end and self.trial_end > datetime.datetime.now()
         )
 
     def is_status_current(self):
@@ -1637,7 +1637,7 @@ class Subscription(StripeModel):
         return (
             self.canceled_at
             and self.cancel_at_period_end
-            and timezone.now() < self.current_period_end
+            and datetime.datetime.now() < self.current_period_end
         )
 
     def is_valid(self):

@@ -1,10 +1,10 @@
 import logging
 import uuid
-from datetime import timedelta
+from datetime import timedelta, datetime
 
 from django.apps import apps
 from django.db import IntegrityError, models, transaction
-from django.utils import dateformat, timezone
+from django.utils import dateformat
 from django.utils.encoding import smart_str
 
 from .. import settings as djstripe_settings
@@ -819,4 +819,4 @@ class IdempotencyKey(models.Model):
         """
         :rtype: bool
         """
-        return timezone.now() > self.created + timedelta(hours=24)
+        return datetime.now() > self.created + timedelta(hours=24)

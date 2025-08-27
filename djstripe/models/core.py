@@ -683,6 +683,8 @@ class Customer(StripeModel):
         trial_from_plan=None,
         trial_period_days=None,
         default_payment_method=None,
+        collection_method=None,
+        payment_behavior=None,
     ):
         """
         Subscribes this customer to a plan.
@@ -737,7 +739,9 @@ class Customer(StripeModel):
             via a subscribed plan.
         :type trial_period_days: integer
         :type default_payment_method: string
-        :type default_tax_rates: dict
+        :type default_tax_rates: list
+        :type collection_method: string
+        :type payment_behavior: string
 
         .. Notes:
         .. ``charge_immediately`` is only available on ``Customer.subscribe()``
@@ -766,10 +770,16 @@ class Customer(StripeModel):
         }
         if default_payment_method:
             args["default_payment_method"] = default_payment_method
+        if collection_method:
+            args["collection_method"] = collection_method
+        if payment_behavior:
+            args["payment_behavior"] = payment_behavior
 
         stripe_subscription = Subscription._api_create(**args)
 
-        if charge_immediately:
+        if charge_immediately or (collection_method and payment_behavior
+                                  and collection_method == "charge_automatically"
+                                  and payment_behavior == "default_incomplete"):
             self.send_invoice()
 
         sleep(5)
